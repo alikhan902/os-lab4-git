@@ -1,0 +1,23 @@
+services:
+  node-exporter:
+    image: prom/node-exporter:latest
+    restart: unless-stopped
+    ports: ["127.0.0.1:9100:9100"]
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports: ["127.0.0.1:9090:9090"]
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana:/etc/grafana/provisioning:ro
+      - ./node-full.json:/var/lib/lab8/node-full.json:ro
+    ports: ["127.0.0.1:3000:3000"]
+volumes:
+  prometheus-data:
+  grafana-data:
