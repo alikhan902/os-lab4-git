@@ -44,3 +44,24 @@ jobs:
       - name: Validate monitoring stack
         working-directory: monitoring
         run: docker compose config --quiet
+
+  ansible-lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible_iac
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Ansible tools
+        run: pipx install --include-deps ansible-lint
+      - name: Validate playbook and inventory
+        run: |
+          ansible-lint setup_env.yml
+          ansible local -i hosts.ini -m ping
+          ansible-playbook -i hosts.ini setup_env.yml --syntax-check
+      - name: Apply configuration and check idempotence
+        run: |
+          ansible-playbook -i hosts.ini setup_env.yml
+          ansible-playbook -i hosts.ini setup_env.yml | tee /tmp/ansible-repeat.log
+          grep -Eq 'changed=0 +unreachable=0 +failed=0' /tmp/ansible-repeat.log
+          curl -fsS http://localhost | grep -F 'Инфраструктура настроена через Ansible (IaC)'
