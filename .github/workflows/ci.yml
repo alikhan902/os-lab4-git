@@ -1,4 +1,4 @@
-name: Bash Script CI
+name: CI and Docker Build
 on:
   push:
     branches: [main]
@@ -23,3 +23,16 @@ jobs:
             exit 1
           fi
           echo "Тест успешно пройден!"
+
+  docker-build:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t "my-app:$GITHUB_SHA" .
+      - name: Test Docker container
+        run: |
+          docker run -d -p 127.0.0.1:8080:8080 --name test_app "my-app:$GITHUB_SHA"
+          trap 'docker rm -f test_app' EXIT
+          curl --fail --retry 10 --retry-connrefused http://127.0.0.1:8080/ | grep -F server.py
